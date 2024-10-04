@@ -12,8 +12,8 @@ cmake_minimum_required(VERSION 3.10)
 # Project name and language (C or C++)
 project(Allocator VERSION 1.0 LANGUAGES CXX)
 
-# Collect all .cpp source files in the current directory
-file(GLOB SOURCES "${CMAKE_SOURCE_DIR}/*.cpp")
+# Collect all .cpp and *.h source files in the current directory
+file(GLOB SOURCES "${CMAKE_SOURCE_DIR}/*.cpp" "${CMAKE_SOURCE_DIR}/*.h")
 
 # Add an executable target
 add_executable(AllocatorApp ${SOURCES})

@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "Allocator.h"
 #include <assert.h>
 #include <new>

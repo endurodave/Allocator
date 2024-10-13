@@ -3,6 +3,8 @@ A C++ fixed block memory allocator that increases system performance and offers 
 
 Originally published on CodeProject at: <a href="https://www.codeproject.com/Articles/1083210/An-Efficient-Cplusplus-Fixed-Block-Memory-Allocato"><strong>An Efficient C++ Fixed Block Memory Allocator</strong></a>
 
+<p><a href="https://www.cmake.org/">CMake</a>&nbsp;is used to create the build files. CMake is free and open-source software. Windows, Linux and other toolchains are supported. See the <strong>CMakeLists.txt </strong>file for more information.</p>
+
 <h2>Introduction</h2>
 
 <p>Custom fixed block memory allocators are used to solve at least two types of memory related problems. First, global heap allocations/deallocations can be slow and nondeterministic. You never know how long the memory manager is going to take. Secondly, to eliminate the possibility of a memory allocation fault caused by a fragmented heap &ndash; a valid concern, especially on mission-critical type systems.</p>

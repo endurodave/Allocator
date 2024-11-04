@@ -3,9 +3,31 @@ A C++ fixed block memory allocator that increases system performance and offers 
 
 Originally published on CodeProject at: <a href="https://www.codeproject.com/Articles/1083210/An-Efficient-Cplusplus-Fixed-Block-Memory-Allocato"><strong>An Efficient C++ Fixed Block Memory Allocator</strong></a>
 
+# Table of Contents
+
+- [An Efficient C++ Fixed Block Memory Allocator](#an-efficient-c-fixed-block-memory-allocator)
+- [Table of Contents](#table-of-contents)
+- [Build](#build)
+- [Introduction](#introduction)
+- [Storage Recycling](#storage-recycling)
+- [Heap vs. Pool](#heap-vs-pool)
+- [Class Design](#class-design)
+- [Using the Code](#using-the-code)
+- [Run Time](#run-time)
+- [Benchmarking](#benchmarking)
+- [Allocator Decisions](#allocator-decisions)
+- [Debugging Memory Leaks](#debugging-memory-leaks)
+- [Error Handling](#error-handling)
+- [Limitations](#limitations)
+- [Porting Issues](#porting-issues)
+- [Reference articles](#reference-articles)
+
+
+# Build
+
 <p><a href="https://www.cmake.org/">CMake</a>&nbsp;is used to create the build files. CMake is free and open-source software. Windows, Linux and other toolchains are supported. See the <strong>CMakeLists.txt </strong>file for more information.</p>
 
-<h2>Introduction</h2>
+# Introduction
 
 <p>Custom fixed block memory allocators are used to solve at least two types of memory related problems. First, global heap allocations/deallocations can be slow and nondeterministic. You never know how long the memory manager is going to take. Secondly, to eliminate the possibility of a memory allocation fault caused by a fragmented heap &ndash; a valid concern, especially on mission-critical type systems.</p>
 
@@ -29,7 +51,7 @@ Originally published on CodeProject at: <a href="https://www.codeproject.com/Art
 
 <p>After reading this article, be sure to read the follow-on article &quot;<b><a href="http://www.codeproject.com/Articles/1084801/Replace-malloc-free-with-a-fast-fixed-block-memory">Replace malloc/free with a Fast Fixed Block Memory Allocator</a></b>&quot; to see how <code>Allocator</code> is used to create a really fast <code>malloc()</code> and <code>free()</code> CRT replacement.</p>
 
-<h2>Storage Recycling</h2>
+# Storage Recycling
 
 <p>The basic philosophy of the memory management scheme is to recycle memory obtained during object allocations. Once storage for an object has been created, it&#39;s never returned to the heap. Instead, the memory is recycled, allowing another object of the same type to reuse the space. I&#39;ve implemented a class called <code>Allocator</code> that expresses the technique.</p>
 
@@ -41,7 +63,7 @@ Originally published on CodeProject at: <a href="https://www.codeproject.com/Art
 	<li>Static pool</li>
 </ol>
 
-<h2>Heap vs. Pool</h2>
+# Heap vs. Pool
 
 <p>The <code>Allocator</code> class is capable of creating new blocks from the heap or a memory pool whenever the free-list cannot provide an existing one. If the pool is used, you must specify the number of objects up front. Using the total objects, a pool large enough to handle the maximum number of instances is created. Obtaining block memory from the heap, on the other hand, has no such quantity limitations &ndash; construct as many new objects as storage permits.</p>
 
@@ -53,7 +75,7 @@ Originally published on CodeProject at: <a href="https://www.codeproject.com/Art
 
 <p>The heap pool and static pool modes offers consistent allocation execution times because the memory manager is never involved with obtaining individual blocks. This makes a new operation very fast and deterministic.</p>
 
-<h2>Class Design</h2>
+# Class Design
 
 <p>The class interface is really straightforward. <code>Allocate()</code> returns a pointer to a memory block and <code>Deallocate()</code> frees the memory block for use again. The constructor is responsible for setting the object size and, if necessary, allocating a memory pool.</p>
 
@@ -103,7 +125,7 @@ allocatorHeapBlocks.Deallocate(memory1);</pre>
 
 <p>If you&#39;re using the heap blocks method, the allocated blocks cannot be freed when the application terminates unless all the instances are checked into the free-list. Therefore, all outstanding objects must be &quot;deleted&quot; before the program ends. Otherwise, you&#39;ve got yourself a nice memory leak. Which brings up an interesting point. Doesn&#39;t <code>Allocator</code> have to track both the free and used blocks? The short answer is no. The long answer is that once a block is given to the application via a pointer, it then becomes the application&#39;s responsibility to return that pointer to <code>Allocator</code> by means of a call to <code>Deallocate()</code> before the program ends. This way, we only need to keep track of the freed blocks.</p>
 
-<h2>Using the Code</h2>
+# Using the Code
 
 <p>I wanted <code>Allocator</code> to be extremely easy to use, so I created macros to automate the interface within a client class. The macros provide a <code>static</code> instance of <code>Allocator</code> and two member functions: <code>operator new</code> and <code>operator delete</code>. By overloading the <code>new</code> and <code>delete</code> operators, <code>Allocator</code> intercepts and handles all memory allocation duties for the client class.</p>
 
@@ -140,13 +162,13 @@ delete myClass;</pre>
 Base* base = new Derived;
 delete base;</pre>
 
-<h2>Run Time</h2>
+# Run Time
 
 <p>At run time, <code>Allocator</code> will initially have no blocks within the free-list, so the first call to <code>Allocate()</code> will get a block from the pool or heap. As execution continues, the system demand for objects of any given allocator instance will fluctuate and new storage will only be allocated when the free-list cannot offer up an existing block. Eventually, the system will settle into some peak number of instances so that each allocation will be obtained from existing blocks instead of the pool/heap.</p>
 
 <p>Compared to obtaining all blocks using the memory manager, the class saves a lot of processing power. During allocations, a pointer is just popped off the free-list, making it extremely quick. Deallocations just push a block pointer back onto the list, which is equally as fast.</p>
 
-<h2>Benchmarking</h2>
+# Benchmarking
 
 <p>Benchmarking the <code>Allocator</code> performance vs. the global heap on a Windows PC shows just how fast the class is. An basic test of allocating and deallocating 20000 4096 and 2048 sized blocks in a somewhat interleaved fashion&nbsp;tests the speed improvement. See the attached source code for the exact algorithm.&nbsp;</p>
 
@@ -320,7 +342,7 @@ delete base;</pre>
 
 <p>As the ARM benchmark results show, the <code>Allocator</code> class is about 15 times faster which is quite significant. It should be noted that the benchmark test really aggravated&nbsp;the Keil heap. The benchmark test allocates, in the ARM case, 500 16-byte blocks. Then every other 16-byte block is deleted followed by allocating 500 32-byte blocks. That last group of 500 allocations added 9.2mS to the overall 11.6mS time. What this says is that when the heap gets fragmented, you can expect the memory manager to take longer with non-deterministic times.</p>
 
-<h2>Allocator Decisions</h2>
+# Allocator Decisions
 
 <p>The first decision to make is do you need an allocator at all. If you don&#39;t have an execution speed or fault-tolerance requirement for your project, you probably don&#39;t need a custom allocator and the global heap will work just fine.</p>
 
@@ -330,11 +352,11 @@ delete base;</pre>
 
 <p>While not implemented in the source code due to multi-threaded issues outside the scope of this article, it is easy have the <code>Allocator</code> constructor keep a <code>static</code> list of all constructed instances. Run the system for a while, then at some pointer iterate through all allocators and output metrics like block count and name via the <code>GetBlockCount()</code> and <code>GetName()</code> functions. The usage metrics provide information on sizing the fixed memory pool for each allocator when switching over to a memory pool. Always add a few more blocks than maximum measured block count to give the system some added resiliency against the pool running out of memory.</p>
 
-<h2>Debugging Memory Leaks</h2>
+# Debugging Memory Leaks
 
 <p>Debugging memory leaks can be very difficult, mostly because the heap is a black box with no visibility into the types and sizes of objects allocated. With <code>Allocator</code>, memory leaks are a bit easier to find since the <code>Allocator</code> tracks the total block count. Repeatedly output (to the console for example) the <code>GetBlockCount()</code> and <code>GetName()</code> for each allocator instance and comparing the differences should expose the allocator with an ever increasing block count.</p>
 
-<h2>Error Handling</h2>
+# Error Handling
 
 <p>Allocation errors in C++ are typically caught using the new-handler function. If the memory manager faults while attempting to allocate memory off the heap, the user&#39;s error-handling function is called via the new-handler function pointer. By assigning the user&#39;s function address to the new-handler, the memory manager is able to call a custom error-handling routine. To make the <code>Allocator</code> class&#39;s error handling consistent, allocations that exceed the pool&#39;s storage capacity also call the function pointed to by new-handler, centralizing all memory allocation faults in one place.</p>
 
@@ -350,15 +372,15 @@ int _tmain(int argc, _TCHAR* argv[])
     std::set_new_handler(out_of_memory);
 ...</pre>
 
-<h2>Limitations</h2>
+# Limitations
 
 <p>The class does not support arrays of objects. An overloaded <code>operator new[]</code> poses a problem for the object recycling method. When this function is called, the <code>size_t</code> argument contains the total memory required for all of the array elements. Creating separate storage for each element is not an option because multiple calls to new don&#39;t guarantee that the blocks are within a contiguous space, which an array needs. Since <code>Allocator</code> only handles same size blocks, arrays are not allowed.</p>
 
-<h2>Porting Issues</h2>
+# Porting Issues
 
 <p><code>Allocator</code> calls the <code>new_handler()</code> directly when the <code>static</code> pool runs out of storage, which may not be appropriate for some systems. This implementation assumes the new-handler function will not return, such as an infinite loop trap or assertion, so it makes no sense to call the handler if the function resolves allocation failures by compacting the heap. A fixed pool is being used and no amount of compaction will remedy that.</p>
 
-<h2>Reference articles</h2>
+# Reference articles
 
 <p><b><a href="http://www.codeproject.com/Articles/1084801/Replace-malloc-free-with-a-fast-fixed-block-memory">Replace malloc/free with a Fast Fixed Block Memory Allocator</a></b>&nbsp;to see how <code>Allocator</code> is used to create a really fast <code>malloc()</code> and <code>free()</code> CRT replacement.</p>
 

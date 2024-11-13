@@ -3,6 +3,8 @@ A C++ fixed block memory allocator that increases system performance and offers 
 
 Originally published on CodeProject at: <a href="https://www.codeproject.com/Articles/1083210/An-Efficient-Cplusplus-Fixed-Block-Memory-Allocato"><strong>An Efficient C++ Fixed Block Memory Allocator</strong></a>
 
+See <a href="https://github.com/endurodave/C_Allocator">A Fixed Block Memory Allocator in C</a> for a C language version of this allocator. 
+
 # Table of Contents
 
 - [An Efficient C++ Fixed Block Memory Allocator](#an-efficient-c-fixed-block-memory-allocator)

@@ -28,7 +28,7 @@ See <a href="https://github.com/endurodave/C_Allocator">A Fixed Block Memory All
 - [Error Handling](#error-handling)
 - [Limitations](#limitations)
 - [Porting Issues](#porting-issues)
-- [Reference articles](#reference-articles)
+- [Reference Articles](#reference-articles)
 
 
 # Build
@@ -388,9 +388,9 @@ int _tmain(int argc, _TCHAR* argv[])
 
 <p><code>Allocator</code> calls the <code>new_handler()</code> directly when the <code>static</code> pool runs out of storage, which may not be appropriate for some systems. This implementation assumes the new-handler function will not return, such as an infinite loop trap or assertion, so it makes no sense to call the handler if the function resolves allocation failures by compacting the heap. A fixed pool is being used and no amount of compaction will remedy that.</p>
 
-# Reference articles
+# Reference Articles
 
-<p><b><a href="http://www.codeproject.com/Articles/1084801/Replace-malloc-free-with-a-fast-fixed-block-memory">Replace malloc/free with a Fast Fixed Block Memory Allocator</a></b>&nbsp;to see how <code>Allocator</code> is used to create a really fast <code>malloc()</code> and <code>free()</code> CRT replacement.</p>
+<p><b><a href="https://github.com/endurodave/xallocator">Replace malloc/free with a Fast Fixed Block Memory Allocator</a></b>&nbsp; - use <code>Allocator</code> to create a really fast <code>malloc()</code> and <code>free()</code> CRT replacement.</p>
 
 
 

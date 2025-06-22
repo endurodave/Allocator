@@ -15,7 +15,7 @@ See <a href="https://github.com/endurodave/C_Allocator">A Fixed Block Memory All
 
 - [An Efficient C++ Fixed Block Memory Allocator](#an-efficient-c-fixed-block-memory-allocator)
 - [Table of Contents](#table-of-contents)
-- [Build](#build)
+- [Getting Started](#getting-started)
 - [Introduction](#introduction)
 - [Storage Recycling](#storage-recycling)
 - [Heap vs. Pool](#heap-vs-pool)
@@ -31,9 +31,14 @@ See <a href="https://github.com/endurodave/C_Allocator">A Fixed Block Memory All
 - [Reference Articles](#reference-articles)
 
 
-# Build
+# Getting Started
 
-<p><a href="https://www.cmake.org/">CMake</a>&nbsp;is used to create the build files. CMake is free and open-source software. Windows, Linux and other toolchains are supported. See the <strong>CMakeLists.txt </strong>file for more information.</p>
+[CMake](https://cmake.org/) is used to create the project build files on any platform including Windows and Linux machines.
+
+1. Clone the repository.
+2. From the repository root, run the following CMake command:   
+   `cmake -B Build .`
+3. Build and run the project within the `Build` directory. 
 
 # Introduction
 

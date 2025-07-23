@@ -16,6 +16,7 @@ See <a href="https://github.com/endurodave/C_Allocator">A Fixed Block Memory All
 - [An Efficient C++ Fixed Block Memory Allocator](#an-efficient-c-fixed-block-memory-allocator)
 - [Table of Contents](#table-of-contents)
 - [Getting Started](#getting-started)
+- [References](#references)
 - [Introduction](#introduction)
 - [Storage Recycling](#storage-recycling)
 - [Heap vs. Pool](#heap-vs-pool)
@@ -39,6 +40,11 @@ See <a href="https://github.com/endurodave/C_Allocator">A Fixed Block Memory All
 2. From the repository root, run the following CMake command:   
    `cmake -B Build .`
 3. Build and run the project within the `Build` directory. 
+
+# References
+
+* <a href="https://github.com/endurodave/xallocator">xallocator</a> - A `malloc`/`free` fixed-block memory allocator replacement. 
+* <a href="https://github.com/endurodave/stl_allocator">stl_allocator</a> - A `std::allocator` compatible fixed-block memory allocator for use with the C++ Standard Library (`std::list`, `std::string`, `std::stringstream`, ...). 
 
 # Introduction
 

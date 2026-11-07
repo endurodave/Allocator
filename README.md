@@ -39,7 +39,7 @@ See <a href="https://github.com/endurodave/C_Allocator">A Fixed Block Memory All
 1. Clone the repository.
 2. From the repository root, run the following CMake command:   
    `cmake -B Build .`
-3. Build and run the project within the `Build` directory. 
+3. Build and run the project within the `Build` directory. `AllocatorApp` runs the examples and benchmarks, then the unit tests in `UnitTests.cpp`, and exits non-zero if a test fails.
 
 # References
 
@@ -98,13 +98,13 @@ See <a href="https://github.com/endurodave/C_Allocator">A Fixed Block Memory All
 
 <p>The class interface is really straightforward. <code>Allocate()</code> returns a pointer to a memory block and <code>Deallocate()</code> frees the memory block for use again. The constructor is responsible for setting the object size and, if necessary, allocating a memory pool.</p>
 
-<p>The arguments passed into the class constructor determine where the new blocks will be obtained. The <code>size</code> argument controls the fixed memory block size. The <code>objects</code> argument sets how many blocks are allowed. <code>0 </code>means get new blocks from the heap as necessary, whereas any other non-zero value indicates using a pool, heap or static, to handle the specified number of instances. The <code>memory</code> argument is a pointer to a optional <code>static</code> memory. If <code>memory</code> is <code>0</code> and <code>objects</code> is not <code>0</code>, <code>Allocator</code> will create a pool from the heap. The static memory pool must be <code>size</code> x <code>objects</code> bytes in size. The <code>name</code> argument optionally gives the allocator a name, which is useful for gather allocator usage metrics.</p>
+<p>The arguments passed into the class constructor determine where the new blocks will be obtained. The <code>size</code> argument controls the fixed memory block size. The <code>objects</code> argument sets how many blocks are allowed. <code>0 </code>means get new blocks from the heap as necessary, whereas any other non-zero value indicates using a pool, heap or static, to handle the specified number of instances. The <code>memory</code> argument is a pointer to a optional <code>static</code> memory. If <code>memory</code> is <code>0</code> and <code>objects</code> is not <code>0</code>, <code>Allocator</code> will create a pool from the heap. The static memory pool must be <code>size</code> x <code>objects</code> bytes in size, and aligned for the objects it holds (e.g. <code>alignas(std::max_align_t)</code>). The <code>name</code> argument optionally gives the allocator a name, which is useful for gather allocator usage metrics.</p>
 
 <pre lang="C++">
 class Allocator
 {
 public:
-    Allocator(size_t size, UINT objects=0, CHAR* memory=NULL, const CHAR* name=NULL);
+    Allocator(size_t size, uint32_t objects=0, char* memory=NULL, const char* name=NULL);
 ...</pre>
 
 <p>The examples below show how each of the three operational mode is controlled via the constructor arguments.</p>
@@ -117,10 +117,10 @@ Allocator allocatorHeapBlocks(100);
 Allocator allocatorHeapPool(100, 20);
 
 // Static pool mode with 20, 100 byte blocks
-char staticMemoryPool[100 * 20];
+alignas(std::max_align_t) char staticMemoryPool[100 * 20];
 Allocator allocatorStaticPool(100, 20, staticMemoryPool);</pre>
 
-<p>To simplify the <code>static</code> pool method somewhat, a simple <code>AllocatorPool&lt;&gt;</code> template class is used. The first template argument is block type and the second argument is the block quantity.</p>
+<p>To simplify the <code>static</code> pool method somewhat, a simple <code>AllocatorPool&lt;&gt;</code> template class is used. The first template argument is block type and the second argument is the block quantity. Its memory is declared <code>alignas(std::max_align_t)</code>, so the objects built in it are correctly aligned.</p>
 
 <pre lang="C++">
 // Static pool mode with 20 MyClass sized blocks 
@@ -379,11 +379,15 @@ delete base;</pre>
 
 <p>Allocation errors in C++ are typically caught using the new-handler function. If the memory manager faults while attempting to allocate memory off the heap, the user&#39;s error-handling function is called via the new-handler function pointer. By assigning the user&#39;s function address to the new-handler, the memory manager is able to call a custom error-handling routine. To make the <code>Allocator</code> class&#39;s error handling consistent, allocations that exceed the pool&#39;s storage capacity also call the function pointed to by new-handler, centralizing all memory allocation faults in one place.</p>
 
+<p>As <code>operator new</code> does, <code>Allocate()</code> calls the new-handler and then retries, until a block is free. So the handler must free a block, throw <code>std::bad_alloc</code> or end the program; a handler that just returns makes <code>Allocate()</code> call it again. With no new-handler installed, <code>Allocate()</code> returns <code>NULL</code> and counts nothing. The <code>DECLARE_ALLOCATOR</code> <code>operator new</code> then throws <code>std::bad_alloc</code> (or aborts when exceptions are disabled), because <code>operator new</code> must never return <code>NULL</code>.</p>
+
 <pre lang="C++">
 static void out_of_memory()
 {
-    // new-handler function called by Allocator when pool is out of memory
-    assert(0);
+    // new-handler function called by Allocator when pool is out of memory.
+    // Allocate() retries after it returns, so it must not just return.
+    std::cerr << "out of memory" << std::endl;
+    std::abort();
 }
 
 int _tmain(int argc, _TCHAR* argv[])
@@ -397,7 +401,9 @@ int _tmain(int argc, _TCHAR* argv[])
 
 # Porting Issues
 
-<p><code>Allocator</code> calls the <code>new_handler()</code> directly when the <code>static</code> pool runs out of storage, which may not be appropriate for some systems. This implementation assumes the new-handler function will not return, such as an infinite loop trap or assertion, so it makes no sense to call the handler if the function resolves allocation failures by compacting the heap. A fixed pool is being used and no amount of compaction will remedy that.</p>
+<p><code>Allocator</code> calls the <code>new_handler()</code> directly when a pool runs out of storage, which may not be appropriate for some systems. Compacting the heap can&#39;t help a fixed pool, so a handler that frees memory is only useful if it can release blocks of this allocator; otherwise it should log and end the program, as the example above does.</p>
+
+<p><code>Allocator</code> is not thread-safe. If an instance is shared between threads, lock around <code>Allocate()</code> and <code>Deallocate()</code>; <code>xallocator</code> does this for its allocators.</p>
 
 # Reference Articles
 

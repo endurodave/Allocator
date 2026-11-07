@@ -3,10 +3,10 @@ name: Clang
 on:
   push:
     branches:
-      - master  # Trigger on push to 'main' branch
+      - master  # Trigger on push to 'master' branch
   pull_request:
     branches:
-      - master  # Trigger on pull request targeting 'main' branch
+      - master  # Trigger on pull request targeting 'master' branch
 
 jobs:
   build:
@@ -14,7 +14,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2  # Checkout the repository code
+      uses: actions/checkout@v7  # Checkout the repository code
 
     - name: Configure CMake with Clang
       run: cmake -S . -B build -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++  # Configure CMake with Clang as the compiler
@@ -23,4 +23,4 @@ jobs:
       run: cmake --build build  # Build the project using CMake
 
     - name: Run AllocatorApp
-      run: ./build/AllocatorApp  # Run the built executable
+      run: ./build/AllocatorApp  # Run the demos and unit tests; non-zero exit on failure

@@ -1,4 +1,6 @@
 #include "Allocator.h"
+#include "DataTypes.h"
+#include <cstdlib>
 #include <assert.h>
 #include <new>
 #include <iostream>
@@ -22,8 +24,8 @@ Allocator allocatorHeapBlocks(100);
 // Heap pool mode with 20, 100 byte blocks
 Allocator allocatorHeapPool(100, 20);
 
-// Static pool mode with 20, 100 byte blocks
-char staticMemoryPool[100 * 20];
+// Static pool mode with 20, 100 byte blocks. Align the memory for the objects it holds.
+alignas(std::max_align_t) char staticMemoryPool[100 * 20];
 Allocator allocatorStaticPool(100, 20, staticMemoryPool);
 
 // Static pool mode with 20 MyClass sized blocks using template
@@ -39,8 +41,10 @@ Allocator allocatorHeapBlocksBenchmark(MAX_BLOCK_SIZE);
 
 static void out_of_memory()
 {
-	// new-handler function called by Allocator when pool is out of memory
-	assert(0);
+	// new-handler called when memory runs out. Allocate() retries after it
+	// returns, as operator new does, so it must free memory, throw or abort.
+	std::cerr << "out of memory" << std::endl;
+	std::abort();
 }
 
 typedef void* (*AllocFunc)(int size);
@@ -56,6 +60,8 @@ void DeallocHeapBlocks(void* ptr);
 //------------------------------------------------------------------------------
 // main
 //------------------------------------------------------------------------------
+int RunUnitTests();
+
 int main(void)
 {
 	std::set_new_handler(out_of_memory);
@@ -89,7 +95,9 @@ int main(void)
 	Benchmark("Heap Blocks (Run 1)", AllocHeapBlocks, DeallocHeapBlocks);
 	Benchmark("Heap Blocks (Run 2)", AllocHeapBlocks, DeallocHeapBlocks);
 	Benchmark("Heap Blocks (Run 3)", AllocHeapBlocks, DeallocHeapBlocks);
-	return 0;
+
+	// Unit tests (UnitTests.cpp); non-zero exit on failure
+	return RunUnitTests() == 0 ? 0 : 1;
 }
 
 //------------------------------------------------------------------------------

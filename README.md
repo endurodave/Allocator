@@ -1,7 +1,8 @@
-![License MIT](https://img.shields.io/github/license/BehaviorTree/BehaviorTree.CPP?color=blue)
+![License MIT](https://img.shields.io/github/license/endurodave/Allocator?color=blue)
 [![conan Ubuntu](https://github.com/endurodave/Allocator/actions/workflows/cmake_ubuntu.yml/badge.svg)](https://github.com/endurodave/Allocator/actions/workflows/cmake_ubuntu.yml)
 [![conan Ubuntu](https://github.com/endurodave/Allocator/actions/workflows/cmake_clang.yml/badge.svg)](https://github.com/endurodave/Allocator/actions/workflows/cmake_clang.yml)
 [![conan Windows](https://github.com/endurodave/Allocator/actions/workflows/cmake_windows.yml/badge.svg)](https://github.com/endurodave/Allocator/actions/workflows/cmake_windows.yml)
+[![PlatformIO](https://github.com/endurodave/Allocator/actions/workflows/platformio.yml/badge.svg)](https://github.com/endurodave/Allocator/actions/workflows/platformio.yml)
 
 # An Efficient C++ Fixed Block Memory Allocator
 
@@ -13,23 +14,23 @@ See <a href="https://github.com/endurodave/C_Allocator">A Fixed Block Memory All
 
 # Table of Contents
 
-- [An Efficient C++ Fixed Block Memory Allocator](#an-efficient-c-fixed-block-memory-allocator)
-- [Table of Contents](#table-of-contents)
-- [Getting Started](#getting-started)
-- [References](#references)
-- [Introduction](#introduction)
-- [Storage Recycling](#storage-recycling)
-- [Heap vs. Pool](#heap-vs-pool)
-- [Class Design](#class-design)
-- [Using the Code](#using-the-code)
-- [Run Time](#run-time)
-- [Benchmarking](#benchmarking)
-- [Allocator Decisions](#allocator-decisions)
-- [Debugging Memory Leaks](#debugging-memory-leaks)
-- [Error Handling](#error-handling)
-- [Limitations](#limitations)
-- [Porting Issues](#porting-issues)
-- [Reference Articles](#reference-articles)
+- [An Efficient C++ Fixed Block Memory Allocator](https://github.com/endurodave/Allocator#an-efficient-c-fixed-block-memory-allocator)
+- [Table of Contents](https://github.com/endurodave/Allocator#table-of-contents)
+- [Getting Started](https://github.com/endurodave/Allocator#getting-started)
+- [References](https://github.com/endurodave/Allocator#references)
+- [Introduction](https://github.com/endurodave/Allocator#introduction)
+- [Storage Recycling](https://github.com/endurodave/Allocator#storage-recycling)
+- [Heap vs. Pool](https://github.com/endurodave/Allocator#heap-vs-pool)
+- [Class Design](https://github.com/endurodave/Allocator#class-design)
+- [Using the Code](https://github.com/endurodave/Allocator#using-the-code)
+- [Run Time](https://github.com/endurodave/Allocator#run-time)
+- [Benchmarking](https://github.com/endurodave/Allocator#benchmarking)
+- [Allocator Decisions](https://github.com/endurodave/Allocator#allocator-decisions)
+- [Debugging Memory Leaks](https://github.com/endurodave/Allocator#debugging-memory-leaks)
+- [Error Handling](https://github.com/endurodave/Allocator#error-handling)
+- [Limitations](https://github.com/endurodave/Allocator#limitations)
+- [Porting Issues](https://github.com/endurodave/Allocator#porting-issues)
+- [Reference Articles](https://github.com/endurodave/Allocator#reference-articles)
 
 
 # Getting Started
@@ -40,6 +41,24 @@ See <a href="https://github.com/endurodave/C_Allocator">A Fixed Block Memory All
 2. From the repository root, run the following CMake command:   
    `cmake -B Build .`
 3. Build and run the project within the `Build` directory. `AllocatorApp` runs the examples and benchmarks, then the unit tests in `UnitTests.cpp`, and exits non-zero if a test fails.
+
+## PlatformIO
+
+`Allocator` is in the [PlatformIO registry](https://registry.platformio.org/libraries/endurodave/Allocator). Add it to your project's `platformio.ini`:
+
+```ini
+lib_deps = endurodave/Allocator@^1.1.0
+```
+
+Then `#include "Allocator.h"` and add `DECLARE_ALLOCATOR`/`IMPLEMENT_ALLOCATOR` to a class, or use `AllocatorPool` for a static pool. The library needs C++11 and builds on any Arduino core with a C++ standard library (ESP32, STM32, RP2040, ...) and on the desktop (`platform = native`). 8-bit AVR boards are not supported. `Allocator` is not thread-safe; [xallocator](https://registry.platformio.org/libraries/endurodave/xallocator) builds a thread-safe `malloc`/`free` replacement on it, with locks for FreeRTOS, ThreadX, Zephyr and CMSIS-RTOS2.
+
+The [allocator-demo](https://github.com/endurodave/Allocator/tree/master/examples/platformio/allocator-demo) example runs on ESP32, ESP32-C3, STM32 Nucleo-F401RE, STM32F4 Discovery, Raspberry Pi Pico and the desktop:
+
+```shell
+cd examples/platformio/allocator-demo
+pio run -e esp32dev -t upload -t monitor
+pio run -e native -t exec
+```
 
 # References
 

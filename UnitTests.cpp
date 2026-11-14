@@ -175,6 +175,23 @@ static void StaticPool_UsesCallerMemory()
     }
 }
 
+// GetBlockCount() counts pool blocks as they are first handed out, as it does
+// heap blocks; a recycled block is not counted again
+static void Pool_BlockCount()
+{
+    Allocator allocator(32, 4);
+    CHECK(allocator.GetBlockCount() == 0);
+    void* p1 = allocator.Allocate(32);
+    void* p2 = allocator.Allocate(32);
+    CHECK(allocator.GetBlockCount() == 2);
+    allocator.Deallocate(p1);
+    void* p3 = allocator.Allocate(32);
+    CHECK(p3 == p1);
+    CHECK(allocator.GetBlockCount() == 2);
+    allocator.Deallocate(p2);
+    allocator.Deallocate(p3);
+}
+
 int RunUnitTests()
 {
     struct Test { const char* name; void (*fn)(); };
@@ -186,6 +203,7 @@ int RunUnitTests()
         { "DeclareAllocator_ExhaustedThrows",       DeclareAllocator_ExhaustedThrows },
         { "HeapBlocks_Reuse",                       HeapBlocks_Reuse },
         { "StaticPool_UsesCallerMemory",            StaticPool_UsesCallerMemory },
+        { "Pool_BlockCount",                        Pool_BlockCount },
     };
 
     std::cout << "-- Unit tests --" << std::endl;

@@ -1,0 +1,33 @@
+{
+  "name": "Allocator",
+  "version": "1.1.0",
+  "description": "Efficient C++ fixed block memory allocator. Per-class new/delete from heap blocks, a heap pool or a static pool: fast, deterministic, no heap fragmentation.",
+  "keywords": ["allocator", "memory", "memory pool", "fixed block", "static pool", "heap", "embedded", "cpp"],
+  "repository": { "type": "git", "url": "https://github.com/endurodave/Allocator.git" },
+  "authors": [{ "name": "David Lafreniere", "url": "https://github.com/endurodave", "maintainer": true }],
+  "license": "MIT",
+  "homepage": "https://github.com/endurodave/Allocator",
+  "frameworks": "*",
+  "platforms": "*",
+  "headers": "Allocator.h",
+  "export": {
+    "include": [
+      "Allocator.cpp", "Allocator.h",
+      "LICENSE", "README.md", "library.json",
+      "examples/platformio/allocator-demo/platformio.ini",
+      "examples/platformio/allocator-demo/src/main.cpp"
+    ]
+  },
+  "build": {
+    "srcDir": ".",
+    "includeDir": ".",
+    "srcFilter": ["-<*>", "+<Allocator.cpp>"]
+  },
+  "examples": [
+    {
+      "name": "allocator-demo",
+      "base": "examples/platformio/allocator-demo",
+      "files": ["platformio.ini", "src/main.cpp"]
+    }
+  ]
+}

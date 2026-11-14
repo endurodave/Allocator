@@ -72,6 +72,7 @@ void* Allocator::Allocate(size_t size)
             if(m_poolIndex < m_maxObjects)
             {
                 pBlock = (void*)(m_pPool + (m_poolIndex++ * m_blockSize));
+                m_blockCnt++;
             }
             else
             {

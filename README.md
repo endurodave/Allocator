@@ -3,6 +3,7 @@
 [![conan Ubuntu](https://github.com/endurodave/Allocator/actions/workflows/cmake_clang.yml/badge.svg)](https://github.com/endurodave/Allocator/actions/workflows/cmake_clang.yml)
 [![conan Windows](https://github.com/endurodave/Allocator/actions/workflows/cmake_windows.yml/badge.svg)](https://github.com/endurodave/Allocator/actions/workflows/cmake_windows.yml)
 [![PlatformIO](https://github.com/endurodave/Allocator/actions/workflows/platformio.yml/badge.svg)](https://github.com/endurodave/Allocator/actions/workflows/platformio.yml)
+[![Arduino](https://github.com/endurodave/Allocator/actions/workflows/arduino.yml/badge.svg)](https://github.com/endurodave/Allocator/actions/workflows/arduino.yml)
 
 # An Efficient C++ Fixed Block Memory Allocator
 
@@ -17,6 +18,8 @@ See <a href="https://github.com/endurodave/C_Allocator">A Fixed Block Memory All
 - [An Efficient C++ Fixed Block Memory Allocator](https://github.com/endurodave/Allocator#an-efficient-c-fixed-block-memory-allocator)
 - [Table of Contents](https://github.com/endurodave/Allocator#table-of-contents)
 - [Getting Started](https://github.com/endurodave/Allocator#getting-started)
+  - [Arduino](https://github.com/endurodave/Allocator#arduino)
+  - [PlatformIO](https://github.com/endurodave/Allocator#platformio)
 - [References](https://github.com/endurodave/Allocator#references)
 - [Introduction](https://github.com/endurodave/Allocator#introduction)
 - [Storage Recycling](https://github.com/endurodave/Allocator#storage-recycling)
@@ -42,12 +45,18 @@ See <a href="https://github.com/endurodave/C_Allocator">A Fixed Block Memory All
    `cmake -B Build .`
 3. Build and run the project within the `Build` directory. `AllocatorApp` runs the examples and benchmarks, then the unit tests in `UnitTests.cpp`, and exits non-zero if a test fails.
 
+The library is the `src` folder (`Allocator.cpp`, `Allocator.h`); the desktop examples, benchmarks and unit tests are in `examples/desktop`.
+
+## Arduino
+
+`Allocator` is an Arduino library. In the Arduino IDE, install **Allocator** from the Library Manager (Sketch &rarr; Include Library &rarr; Manage Libraries), then `#include <Allocator.h>` and see File &rarr; Examples &rarr; Allocator &rarr; Allocator_Demo. It needs a board with a full C++ standard library: UNO R4, Zero/MKR (SAMD), ESP32, RP2040, STM32 and similar. 8-bit AVR boards (Uno, Mega) and the Due aren't supported.
+
 ## PlatformIO
 
 `Allocator` is in the [PlatformIO registry](https://registry.platformio.org/libraries/endurodave/Allocator). Add it to your project's `platformio.ini`:
 
 ```ini
-lib_deps = endurodave/Allocator@^1.1.0
+lib_deps = endurodave/Allocator@^1.2.0
 ```
 
 Then `#include "Allocator.h"` and add `DECLARE_ALLOCATOR`/`IMPLEMENT_ALLOCATOR` to a class, or use `AllocatorPool` for a static pool. The library needs C++11 and builds on any Arduino core with a C++ standard library (ESP32, STM32, RP2040, ...) and on the desktop (`platform = native`). 8-bit AVR boards are not supported. `Allocator` is not thread-safe; [xallocator](https://registry.platformio.org/libraries/endurodave/xallocator) builds a thread-safe `malloc`/`free` replacement on it, with locks for FreeRTOS, ThreadX, Zephyr and CMSIS-RTOS2.
@@ -117,7 +126,7 @@ pio run -e native -t exec
 
 <p>The class interface is really straightforward. <code>Allocate()</code> returns a pointer to a memory block and <code>Deallocate()</code> frees the memory block for use again. The constructor is responsible for setting the object size and, if necessary, allocating a memory pool.</p>
 
-<p>The arguments passed into the class constructor determine where the new blocks will be obtained. The <code>size</code> argument controls the fixed memory block size. The <code>objects</code> argument sets how many blocks are allowed. <code>0 </code>means get new blocks from the heap as necessary, whereas any other non-zero value indicates using a pool, heap or static, to handle the specified number of instances. The <code>memory</code> argument is a pointer to a optional <code>static</code> memory. If <code>memory</code> is <code>0</code> and <code>objects</code> is not <code>0</code>, <code>Allocator</code> will create a pool from the heap. The static memory pool must be <code>size</code> x <code>objects</code> bytes in size, and aligned for the objects it holds (e.g. <code>alignas(std::max_align_t)</code>). The <code>name</code> argument optionally gives the allocator a name, which is useful for gather allocator usage metrics.</p>
+<p>The arguments passed into the class constructor determine where the new blocks will be obtained. The <code>size</code> argument controls the fixed memory block size. The <code>objects</code> argument sets how many blocks are allowed. <code>0 </code>means get new blocks from the heap as necessary, whereas any other non-zero value indicates using a pool, heap or static, to handle the specified number of instances. The <code>memory</code> argument is a pointer to a optional <code>static</code> memory. If <code>memory</code> is <code>0</code> and <code>objects</code> is not <code>0</code>, <code>Allocator</code> will create a pool from the heap. The static memory pool must be <code>Allocator::BlockSize(size)</code> x <code>objects</code> bytes in size (a block is at least the size of a pointer, rounded up to a pointer&rsquo;s alignment) and aligned for the objects it holds. The <code>name</code> argument optionally gives the allocator a name, which is useful for gather allocator usage metrics.</p>
 
 <pre lang="C++">
 class Allocator
@@ -136,10 +145,10 @@ Allocator allocatorHeapBlocks(100);
 Allocator allocatorHeapPool(100, 20);
 
 // Static pool mode with 20, 100 byte blocks
-alignas(std::max_align_t) char staticMemoryPool[100 * 20];
+alignas(std::max_align_t) char staticMemoryPool[Allocator::BlockSize(100) * 20];
 Allocator allocatorStaticPool(100, 20, staticMemoryPool);</pre>
 
-<p>To simplify the <code>static</code> pool method somewhat, a simple <code>AllocatorPool&lt;&gt;</code> template class is used. The first template argument is block type and the second argument is the block quantity. Its memory is declared <code>alignas(std::max_align_t)</code>, so the objects built in it are correctly aligned.</p>
+<p>To simplify the <code>static</code> pool method somewhat, a simple <code>AllocatorPool&lt;&gt;</code> template class is used. The first template argument is block type and the second argument is the block quantity. It sizes its memory with <code>Allocator::BlockSize()</code> and aligns it for both the objects and the free-list pointers, so pools of small or odd-sized types are safe.</p>
 
 <pre lang="C++">
 // Static pool mode with 20 MyClass sized blocks 

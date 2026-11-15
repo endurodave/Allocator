@@ -2,11 +2,25 @@
 #include <new>
 #include <assert.h>
 
+// The current new-handler. std::get_new_handler() is C++11, but GCC's library
+// only has it from GCC 4.9; older toolchains (e.g. the Arduino Due's GCC 4.8)
+// read it by setting and restoring it.
+static std::new_handler CurrentNewHandler()
+{
+#if defined(__GNUC__) && !defined(__clang__) && (__GNUC__ < 4 || (__GNUC__ == 4 && __GNUC_MINOR__ < 9))
+    std::new_handler handler = std::set_new_handler(0);
+    std::set_new_handler(handler);
+    return handler;
+#else
+    return std::get_new_handler();
+#endif
+}
+
 //------------------------------------------------------------------------------
 // Constructor
 //------------------------------------------------------------------------------
 Allocator::Allocator(size_t size, uint32_t objects, char* memory, const char* name) :
-    m_blockSize(size < sizeof(long*) ? sizeof(long*):size),
+    m_blockSize(BlockSize(size)),
     m_objectSize(size),
     m_maxObjects(objects),
     m_allocatorMode(HEAP_BLOCKS),
@@ -81,7 +95,7 @@ void* Allocator::Allocate(size_t size)
                 // throw or abort. With no handler, fail and return NULL.
                 while (!pBlock)
                 {
-                    std::new_handler handler = std::get_new_handler();
+                    std::new_handler handler = CurrentNewHandler();
                     if (!handler)
                         break;
                     (*handler)();

@@ -192,6 +192,48 @@ static void Pool_BlockCount()
     allocator.Deallocate(p3);
 }
 
+// A type smaller than a pointer: each block still holds the free-list pointer,
+// so the pool must be sized for pointer-sized blocks, not sizeof(T)
+static void Pool_SmallTypeStaysInPool()
+{
+    std::new_handler saved = std::set_new_handler(nullptr);
+
+    AllocatorPool<uint16_t, 4> pool;
+    const char* begin = reinterpret_cast<const char*>(&pool);
+    const char* end = begin + sizeof(pool);
+    CHECK(pool.GetBlockSize() >= sizeof(void*));
+    void* blocks[4];
+    for (int i = 0; i < 4; i++)
+    {
+        blocks[i] = pool.Allocate(sizeof(uint16_t));
+        CHECK(blocks[i] != NULL);
+        const char* p = static_cast<const char*>(blocks[i]);
+        CHECK(p >= begin && p + pool.GetBlockSize() <= end);
+    }
+    CHECK(pool.Allocate(sizeof(uint16_t)) == NULL);
+    for (int i = 0; i < 4; i++)
+        pool.Deallocate(blocks[i]);
+
+    std::set_new_handler(saved);
+}
+
+// An odd object size: blocks are rounded up so each free-list pointer is aligned
+struct Odd { char c[13]; };
+static void Pool_OddSizeBlocksPointerAligned()
+{
+    AllocatorPool<Odd, 3> pool;
+    CHECK(pool.GetBlockSize() % alignof(void*) == 0);
+    void* blocks[3];
+    for (int i = 0; i < 3; i++)
+    {
+        blocks[i] = pool.Allocate(sizeof(Odd));
+        CHECK(blocks[i] != NULL);
+        CHECK(reinterpret_cast<uintptr_t>(blocks[i]) % alignof(void*) == 0);
+    }
+    for (int i = 0; i < 3; i++)
+        pool.Deallocate(blocks[i]);
+}
+
 int RunUnitTests()
 {
     struct Test { const char* name; void (*fn)(); };
@@ -204,6 +246,8 @@ int RunUnitTests()
         { "HeapBlocks_Reuse",                       HeapBlocks_Reuse },
         { "StaticPool_UsesCallerMemory",            StaticPool_UsesCallerMemory },
         { "Pool_BlockCount",                        Pool_BlockCount },
+        { "Pool_SmallTypeStaysInPool",              Pool_SmallTypeStaysInPool },
+        { "Pool_OddSizeBlocksPointerAligned",       Pool_OddSizeBlocksPointerAligned },
     };
 
     std::cout << "-- Unit tests --" << std::endl;

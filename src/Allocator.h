@@ -34,13 +34,21 @@ public:
 	///		created off the heap as necessary.
 	/// @param[in]	memory - pointer to a block of static memory for allocator or NULL
 	///		to obtain memory from global heap. If not NULL, the objects argument
-	///		defines the size of the memory block (size x objects = memory size in bytes).
-	///		Align it for the objects it holds, e.g. alignas(std::max_align_t).
+	///		defines the size of the memory block: BlockSize(size) x objects bytes,
+	///		aligned for the objects it holds. AllocatorPool does both.
 	///	@param[in]	name - optional allocator name string.
     Allocator(size_t size, uint32_t objects=0, char* memory = NULL, const char* name=NULL);
 
     /// Destructor
     ~Allocator();
+
+    /// The block size used for objects of 'size' bytes: room for the free-list
+    /// pointer that a free block holds, rounded up to the pointer's alignment.
+    static constexpr size_t BlockSize(size_t size)
+    {
+        return ((size < sizeof(long*) ? sizeof(long*) : size) + alignof(long*) - 1)
+            / alignof(long*) * alignof(long*);
+    }
 
     /// Get a pointer to a memory block.
     /// @details When a pool is exhausted, the std::new_handler (if any) is called
@@ -126,8 +134,11 @@ public:
 	{
 	}
 private:
-	// Aligned for any type, so objects built in the pool are correctly aligned
-	alignas(std::max_align_t) char m_memory[sizeof(T) * Objects];
+	// One block per object, sized like the allocator's blocks (at least a
+	// pointer, pointer-aligned), and aligned for both T and the free-list
+	// pointer. Blocks are a multiple of both alignments, so every block is too.
+	alignas(alignof(T) > alignof(long*) ? alignof(T) : alignof(long*))
+		char m_memory[Allocator::BlockSize(sizeof(T)) * Objects];
 };
 
 // macro to provide header file interface
